@@ -254,6 +254,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
+			//这里完成的是FactoryBean的相关处理
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
@@ -265,6 +266,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			// Check if bean definition exists in this factory.
+			//检查IoC容器中是否存在BeanDefinition，检查是否能在当前的BeanFactory中取得需要的Bean，如果在当前工厂中找不到，则到双亲BeanFactory中去取，
+			//如果当前的双亲工厂去不到，则继续顺着双亲BeanFactory链一直向上查找
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
@@ -291,10 +294,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			try {
+				//根据Bean名字获取BeanDefinition
 				final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				//获取当前Bean的所有依赖Bean，这样会触发getBean的递归调用，直到取到一个没有任何依赖的Bean为止
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
@@ -376,6 +381,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		// Check if required type matches the type of the actual bean instance.
+		//对创建的Bean进行类型检查，如果没有问题，就返回这个新创建的Bean,这个Bean已经是包含了依赖关系的Bean.
 		if (requiredType != null && !requiredType.isInstance(bean)) {
 			try {
 				T convertedBean = getTypeConverter().convertIfNecessary(bean, requiredType);

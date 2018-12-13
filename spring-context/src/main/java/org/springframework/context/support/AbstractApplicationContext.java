@@ -515,37 +515,38 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
+			// 在子类中启动refreshBeanFactory()
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
 			prepareBeanFactory(beanFactory);
 
 			try {
-				// Allows post-processing of the bean factory in context subclasses.
+				// Allows post-processing of the bean factory in context subclasses.设置BeanFactory的后置处理
 				postProcessBeanFactory(beanFactory);
 
-				// Invoke factory processors registered as beans in the context.
+				// Invoke factory processors registered as beans in the context.调用BeanFactory的后置处理，这些后处理器是在Bean定义中向容器注册的
 				invokeBeanFactoryPostProcessors(beanFactory);
 
-				// Register bean processors that intercept bean creation.
+				// Register bean processors that intercept bean creation.注册Bean的后处理器，在Bean创建过程中调用
 				registerBeanPostProcessors(beanFactory);
 
-				// Initialize message source for this context.
+				// Initialize message source for this context.对上下文中的消息源进行初始化
 				initMessageSource();
 
-				// Initialize event multicaster for this context.
+				// Initialize event multicaster for this context.初始化上下文中的事件机制
 				initApplicationEventMulticaster();
 
-				// Initialize other special beans in specific context subclasses.
+				// Initialize other special beans in specific context subclasses.初始化其它特殊的Bean
 				onRefresh();
 
-				// Check for listener beans and register them.
+				// Check for listener beans and register them.检查监听Bean，并将这些Bean向容器中注册
 				registerListeners();
 
-				// Instantiate all remaining (non-lazy-init) singletons.
+				// Instantiate all remaining (non-lazy-init) singletons.实例化所有(non-lazy-init)单例
 				finishBeanFactoryInitialization(beanFactory);
 
-				// Last step: publish corresponding event.
+				// Last step: publish corresponding event.发布容器事件
 				finishRefresh();
 			}
 
@@ -555,7 +556,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 							"cancelling refresh attempt: " + ex);
 				}
 
-				// Destroy already created singletons to avoid dangling resources.
+				// Destroy already created singletons to avoid dangling resources.为防止资源占用，在异常处理中，销毁已经在前面过程中生成的单例Bean
 				destroyBeans();
 
 				// Reset 'active' flag.

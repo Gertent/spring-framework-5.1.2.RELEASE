@@ -100,7 +100,7 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	 * loading the definitions from the given XML files and automatically
 	 * refreshing the context.
 	 * @param configLocations array of file paths
-	 * @param parent the parent context
+	 * @param parent the parent context 允许指定自己的双亲IoC容器
 	 * @throws BeansException if context creation failed
 	 */
 	public FileSystemXmlApplicationContext(String[] configLocations, ApplicationContext parent) throws BeansException {
