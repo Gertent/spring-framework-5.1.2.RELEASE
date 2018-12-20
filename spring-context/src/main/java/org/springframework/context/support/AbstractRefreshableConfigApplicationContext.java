@@ -61,15 +61,19 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 
 
 	/**
+	 * 处理单个资源文件路径为一个字符串的情况
 	 * Set the config locations for this application context in init-param style,
 	 * i.e. with distinct locations separated by commas, semicolons or whitespace.
 	 * <p>If not set, the implementation may use a default as appropriate.
 	 */
 	public void setConfigLocation(String location) {
+		//String CONFIG_LOCATION_DELIMITERS = ",; /t/n";
+		//即多个资源文件路径之间用” ,; /t/n”分隔，解析成数组形式
 		setConfigLocations(StringUtils.tokenizeToStringArray(location, CONFIG_LOCATION_DELIMITERS));
 	}
 
 	/**
+	 * //解析Bean定义资源文件的路径，处理多个资源文件字符串数组
 	 * Set the config locations for this application context.
 	 * <p>If not set, the implementation may use a default as appropriate.
 	 */
@@ -78,6 +82,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 			Assert.noNullElements(locations, "Config locations must not be null");
 			this.configLocations = new String[locations.length];
 			for (int i = 0; i < locations.length; i++) {
+				// resolvePath为同一个类中将字符串解析为路径的方法
 				this.configLocations[i] = resolvePath(locations[i]).trim();
 			}
 		}
@@ -102,6 +107,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	}
 
 	/**
+	 * 这里又使用了一个委托模式，调用子类的获取Bean定义资源定位的方法 该方法在ClassPathXmlApplicationContext中进行实现，对于我们举例分析源码的FileSystemXmlApplicationContext没有使用该方法
 	 * Return the default config locations to use, for the case where no
 	 * explicit config locations have been specified.
 	 * <p>The default implementation returns {@code null},
