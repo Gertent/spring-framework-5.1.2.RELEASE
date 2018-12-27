@@ -512,6 +512,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		return this.applicationListeners;
 	}
 
+	//容器初始化的过程，读入Bean定义资源，并解析注册
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
@@ -521,6 +522,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			// Tell the subclass to refresh the internal bean factory.
 			// 在子类中启动refreshBeanFactory(),Bean定义资源文件的载入从 子类的refreshBeanFactory()方法启动
+			//启动了Bean定义资源的载入、注册过程
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
@@ -575,6 +577,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				destroyBeans();
 
 				// Reset 'active' flag.
+				//取消refresh操作，重置容器的同步标识
 				cancelRefresh(ex);
 
 				// Propagate exception to caller.
@@ -846,11 +849,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	}
 
 	/**
+	 * 对配置了lazy-init属性的Bean进行预实例化处理
 	 * Finish the initialization of this context's bean factory,
 	 * initializing all remaining singleton beans.
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// Initialize conversion service for this context.
+		//这是Spring3以后新加的代码，为容器指定一个转换服务(ConversionService)
+		//在对某些Bean属性进行转换时使用
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
 				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
 			beanFactory.setConversionService(
@@ -871,13 +877,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Stop using the temporary ClassLoader for type matching.
+		//为了类型匹配，停止使用临时的类加载器
 		beanFactory.setTempClassLoader(null);
 
 		// Allow for caching all bean definition metadata, not expecting further changes.
+		//缓存容器中所有注册的BeanDefinition元数据，以防被修改
 		beanFactory.freezeConfiguration();
 
 		// Instantiate all remaining (non-lazy-init) singletons.
-		//该方法由DefaultListableBeanFactory实现
+		//ConfigurableListableBeanFactory是一个接口，其preInstantiateSingletons方法由其子类DefaultListableBeanFactory提供//对配置了lazy-init属性的单态模式Bean进行预实例化处理
 		beanFactory.preInstantiateSingletons();
 	}
 
