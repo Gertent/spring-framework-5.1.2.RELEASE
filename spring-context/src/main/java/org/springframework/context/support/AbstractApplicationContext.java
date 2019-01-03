@@ -531,31 +531,35 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
-				// 设置BeanFactory的后置处理//为容器的某些子类指定特殊的BeanPost事件处理器
+				//为容器的某些子类指定特殊的BeanPost事件处理器//提供子类覆盖的额外处理，即子类处理自定义的BeanFactoryPostProcess
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
 				// 调用BeanFactory的后置处理，这些后处理器是在Bean定义中向容器注册的
+				//激活各种BeanFactory处理器,包括BeanDefinitionRegistryBeanFactoryPostProcessor和普通的BeanFactoryPostProcessor
+						//执行对应的postProcessBeanDefinitionRegistry方法 和  postProcessBeanFactory方法
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
 				// 注册Bean的后处理器，在Bean创建过程中调用
+				//注册拦截Bean创建的Bean处理器，即注册BeanPostProcessor，不是BeanFactoryPostProcessor，注意两者的区别
+						// 注意，这里仅仅是注册，并不会执行对应的方法，将在bean的实例化时执行对应的方法
 				registerBeanPostProcessors(beanFactory);
 
 				// Initialize message source for this context.
-				// 对上下文中的消息源进行初始化
+				// 初始化上下文中的资源文件，如国际化文件的处理等
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
-				// 初始化上下文中的事件机制
+				// 初始化上下文事件广播器，并放入applicatioEventMulticaster,如ApplicationEventPublisher
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
-				// 初始化其它特殊的Bean
+				// 初始化其它特殊的Bean//给子类扩展初始化其他Bean
 				onRefresh();
 
 				// Check for listener beans and register them.
-				// 检查监听Bean，并将这些Bean向容器中注册
+				// 检查监听Bean，并将这些Bean向容器中注册//在所有bean中查找listener bean，然后注册到广播器中
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
