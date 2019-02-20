@@ -4,7 +4,7 @@ import com.gertent.bean.Boss;
 import com.gertent.bean.Car;
 import com.gertent.bean.Color;
 import com.gertent.config.MainConifgOfAutowired;
-import com.gertent.service.BookService;
+import com.gertent.services.BookService;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
