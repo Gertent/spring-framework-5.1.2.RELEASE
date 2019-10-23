@@ -20,7 +20,7 @@ public class LogAspects {
     public void pointCut() {
     }
 
-    ;
+
 
     //@Before在目标方法之前切入；切入点表达式（指定在哪个方法切入）
     @Before("pointCut()")
@@ -28,7 +28,7 @@ public class LogAspects {
         Object[] args = joinPoint.getArgs();
         System.out.println("" + joinPoint.getSignature().getName() + "运行。。。@Before:参数列表是：{" + Arrays.asList(args) + "}");
     }
-
+	//如果在当前类外面引用，则需要全限定名称
     @After("com.gertent.aop.LogAspects.pointCut()")
     public void logEnd(JoinPoint joinPoint) {
         System.out.println("" + joinPoint.getSignature().getName() + "结束。。。@After");
