@@ -339,27 +339,36 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 */
 	@Override
 	public final TransactionStatus getTransaction(@Nullable TransactionDefinition definition) throws TransactionException {
+		// 对于Spring的BasicDataSource，这里就是创建一个DataSourceTransactionObject对象，
+		// 其返回值是根据具体的实现类不一样的，比如hibernate返回的是一个HibernateTransactionObject对象，
+		// 而Jpa则返回的是一个JpaTransactionObject对象
 		Object transaction = doGetTransaction();
 
 		// Cache debug flag to avoid repeated checks.
 		boolean debugEnabled = logger.isDebugEnabled();
-
+		// 如果TransactionDefinition为空，则创建一个默认的TransactionDefinition
 		if (definition == null) {
 			// Use defaults if no transaction definition given.
 			definition = new DefaultTransactionDefinition();
 		}
-
+		// 判断当前方法调用是否已经在某个事务中，这里的判断方式就是判断当前的ConnectionHolder是否为空，
+		// 并且当前存在的事务是否处于active状态，如果是，则说明当前存在事务。如果这里不存在事务，一般的，
+		// 其ConnectionHolder是没有值的
 		if (isExistingTransaction(transaction)) {
 			// Existing transaction found -> check propagation behavior to find out how to behave.
+			// 判断当前方法的事务的传播性是否支持已经存在的事务属性，将封装后的事务属性返回
 			return handleExistingTransaction(definition, transaction, debugEnabled);
 		}
 
 		// Check definition settings for new transaction.
+		// 这里timeout的默认值是-1，用户设置的过期时间不能比-1要小
 		if (definition.getTimeout() < TransactionDefinition.TIMEOUT_DEFAULT) {
 			throw new InvalidTimeoutException("Invalid transaction timeout", definition.getTimeout());
 		}
 
 		// No existing transaction found -> check propagation behavior to find out how to proceed.
+		// 如果当前方法的执行不在某个事务中，并且当前方法标注了事务传播性为PROPAGATION_MANDATORY，
+		// 由于这种传播性要求当前方法执行必须处于某一事务中，并且该事务必须是已存在的，这里不存在，因而抛出异常
 		if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_MANDATORY) {
 			throw new IllegalTransactionStateException(
 					"No existing transaction found for transaction marked with propagation 'mandatory'");
@@ -367,19 +376,29 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		else if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) {
+			// 判断当前方法的事务传播性是否为REQUIRED，REQUIRES_NEW或NESTED中的一种，
+			// 由于当前方法走到这里说明是不存在事务的，因而需要为其创建一个新事务。这里suspend()方法
+			// 调用时传了一个null进去，如果用户设置了事务事件回调的属性，则会将这些回调事件暂时挂起，
+			// 并且封装到SuspendedResourcesHolder中，如果没有注册回调事件，该方法将会返回null
 			SuspendedResourcesHolder suspendedResources = suspend(null);
 			if (debugEnabled) {
 				logger.debug("Creating new transaction with name [" + definition.getName() + "]: " + definition);
 			}
 			try {
+				// 判断用户是否设置了永远不执行事务回调事件的属性
 				boolean newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
+				// 将当前事务属性的定义，已经存在的事务和挂起的事务回调事件都封装为一个
 				DefaultTransactionStatus status = newTransactionStatus(
 						definition, transaction, true, newSynchronization, debugEnabled, suspendedResources);
+				// 通过调用Jdbc的api开始一个事务
 				doBegin(transaction, definition);
+				// 将当前事务的一些属性，比如隔离级别，是否只读等设置到ThreadLocal变量中进行缓存
 				prepareSynchronization(status, definition);
 				return status;
 			}
 			catch (RuntimeException | Error ex) {
+				// 如果当前事务抛出异常，则重新加载挂起的事务和事务事件，这里因为当前是不存在事务的，
+				// 因而传入的需要加载的事务为null
 				resume(null, suspendedResources);
 				throw ex;
 			}
@@ -390,6 +409,9 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				logger.warn("Custom isolation level specified but no actual transaction initiated; " +
 						"isolation level will effectively be ignored: " + definition);
 			}
+			// 走到这一步说明事务的传播性为SUPPORTS，NOT_SUPPORTED或者NEVER，由于当前是不存在事务的，
+			// 对于这几种传播性而言，其也不需要事务，因而这里不用做其他处理，直接封装一个空事务的
+			// TransactionStatus即可
 			boolean newSynchronization = (getTransactionSynchronization() == SYNCHRONIZATION_ALWAYS);
 			return prepareTransactionStatus(definition, null, true, newSynchronization, debugEnabled, null);
 		}

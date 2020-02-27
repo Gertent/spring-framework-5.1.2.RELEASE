@@ -38,6 +38,7 @@ public class BeanFactoryTransactionAttributeSourceAdvisor extends AbstractBeanFa
 	private TransactionAttributeSource transactionAttributeSource;
 
 	private final TransactionAttributeSourcePointcut pointcut = new TransactionAttributeSourcePointcut() {
+		// 将标签解析时注册的AnnotationTransactionAttributeSource返回
 		@Override
 		@Nullable
 		protected TransactionAttributeSource getTransactionAttributeSource() {

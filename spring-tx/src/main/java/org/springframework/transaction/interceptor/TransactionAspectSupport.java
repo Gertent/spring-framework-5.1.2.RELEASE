@@ -279,28 +279,37 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			final InvocationCallback invocation) throws Throwable {
 
 		// If the transaction attribute is null, the method is non-transactional.
+		// 获取@Transactional中的相关属性
 		TransactionAttributeSource tas = getTransactionAttributeSource();
 		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
+		// 获取当前TransactionManager的配置，这个bean一般在配置文件中会进行配置
 		final PlatformTransactionManager tm = determineTransactionManager(txAttr);
+		// 获取当前方法的一个签名
 		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
-
+		// 如果配置的TransactionManager不是CallbackPreferringPlatformTransactionManager类型的，
+		// 则为当前方法的执行新建一个事务
 		if (txAttr == null || !(tm instanceof CallbackPreferringPlatformTransactionManager)) {
 			// Standard transaction demarcation with getTransaction and commit/rollback calls.
+			// 为当前方法的执行新建一个事务
 			TransactionInfo txInfo = createTransactionIfNecessary(tm, txAttr, joinpointIdentification);
 			Object retVal = null;
 			try {
 				// This is an around advice: Invoke the next interceptor in the chain.
 				// This will normally result in a target object being invoked.
+				// 执行目标方法
 				retVal = invocation.proceedWithInvocation();
 			}
 			catch (Throwable ex) {
 				// target invocation exception
+				// 在执行抛出异常时对异常进行处理，并织入异常处理逻辑
 				completeTransactionAfterThrowing(txInfo, ex);
 				throw ex;
 			}
 			finally {
+				// 执行事务处理完成的逻辑，无论事务是需要提交还是回滚
 				cleanupTransactionInfo(txInfo);
 			}
+			// 提交当前事务
 			commitTransactionAfterReturning(txInfo);
 			return retVal;
 		}
@@ -310,12 +319,19 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 			// It's a CallbackPreferringPlatformTransactionManager: pass a TransactionCallback in.
 			try {
+				// 如果当前TransactionManager实现了CallbackPreferringPlatformTransactionManager，
+				// 则通过其execute()方法进行事务处理。这里CallbackPreferringPlatform-
+				// TransactionManager的作用在于其提供了一个execute()方法，用于供给实现了自定义
+				// 的TransactionManager的类实现事务的相关处理逻辑
 				Object result = ((CallbackPreferringPlatformTransactionManager) tm).execute(txAttr, status -> {
+					// 获取Transaction配置
 					TransactionInfo txInfo = prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);
 					try {
+						// 调用目标方法
 						return invocation.proceedWithInvocation();
 					}
 					catch (Throwable ex) {
+						// 如果当前异常需要回滚，则进行回滚并抛出异常
 						if (txAttr.rollbackOn(ex)) {
 							// A RuntimeException: will lead to a rollback.
 							if (ex instanceof RuntimeException) {
@@ -332,11 +348,13 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 						}
 					}
 					finally {
+						// 清除保存的Transaction信息
 						cleanupTransactionInfo(txInfo);
 					}
 				});
 
 				// Check result state: It might indicate a Throwable to rethrow.
+				// 如果执行异常，则将该异常抛出
 				if (throwableHolder.throwable != null) {
 					throw throwableHolder.throwable;
 				}
@@ -459,6 +477,8 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			@Nullable TransactionAttribute txAttr, final String joinpointIdentification) {
 
 		// If no name specified, apply method identification as transaction name.
+		// 如果TransactionAttribute的名称为空，则创建一个代理的TransactionAttribute，
+		// 并且将其名称设置为需要织入事务的方法的名称
 		if (txAttr != null && txAttr.getName() == null) {
 			txAttr = new DelegatingTransactionAttribute(txAttr) {
 				@Override
@@ -471,6 +491,8 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		TransactionStatus status = null;
 		if (txAttr != null) {
 			if (tm != null) {
+				// 如果事务属性不为空，并且TransactionManager都存在，
+				// 则通过TransactionManager获取当前事务状态的对象
 				status = tm.getTransaction(txAttr);
 			}
 			else {
@@ -480,6 +502,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				}
 			}
 		}
+		// 将当前事务属性和事务状态封装为一个TransactionInfo，这里主要做的工作是将事务属性绑定到当前线程
 		return prepareTransactionInfo(tm, txAttr, joinpointIdentification, status);
 	}
 

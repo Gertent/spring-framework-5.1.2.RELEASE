@@ -37,12 +37,14 @@ abstract class TransactionAttributeSourcePointcut extends StaticMethodMatcherPoi
 
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
+		// 如果目标类不为空，并且是已经使用Transaction环绕后生成的类，则会将其过滤掉
 		if (TransactionalProxy.class.isAssignableFrom(targetClass) ||
 				PlatformTransactionManager.class.isAssignableFrom(targetClass) ||
 				PersistenceExceptionTranslator.class.isAssignableFrom(targetClass)) {
 			return false;
 		}
 		TransactionAttributeSource tas = getTransactionAttributeSource();
+		// 通过TransactionAttributeSource获取事务属性配置，如果当前方法没有配置事务，则不对其进行环绕
 		return (tas == null || tas.getTransactionAttribute(method, targetClass) != null);
 	}
 
